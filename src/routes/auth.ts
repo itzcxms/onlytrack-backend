@@ -108,7 +108,7 @@ router.post("/inscription", async (req, res) => {
     // await sendVerificationEmail(data.email, tokenVerification);
 
     console.log(
-      `✉️  Email de vérification (DEV): http://localhost:5000/api/auth/verifier-email/${tokenVerification}`,
+      `✉️  Email de vérification (DEV): http://localhost:5000/api/auth/verifier-email/${tokenVerification}`
     );
 
     res.status(201).json({
@@ -202,11 +202,12 @@ router.post("/connexion", async (req, res) => {
       .where(eq(utilisateurs.id, user.id));
 
     // Définir le cookie sécurisé
+    // sameSite: "none" + secure: true requis pour les cookies cross-domain (frontend/backend séparés)
     res.clearCookie("demo_token"); // Effacer le cookie démo s'il existe
     res.cookie("auth_token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // HTTPS uniquement en prod
-      sameSite: "strict",
+      secure: true, // Obligatoire avec sameSite: "none"
+      sameSite: "none", // Permet les cookies cross-origin
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 jours en millisecondes
     });
 
@@ -276,8 +277,8 @@ router.get("/verifier-email/:token", async (req, res) => {
       .where(
         and(
           eq(utilisateurs.tokenVerification, token),
-          eq(utilisateurs.emailVerifie, false),
-        ),
+          eq(utilisateurs.emailVerifie, false)
+        )
       )
       .limit(1);
 
@@ -381,7 +382,11 @@ router.put("/profil", authenticate, async (req, res) => {
     }
 
     if (prenom.length < 2 || nom.length < 2) {
-      return res.status(400).json({ error: "Le prénom et le nom doivent contenir au moins 2 caractères" });
+      return res
+        .status(400)
+        .json({
+          error: "Le prénom et le nom doivent contenir au moins 2 caractères",
+        });
     }
 
     await db
